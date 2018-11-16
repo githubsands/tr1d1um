@@ -42,17 +42,13 @@ type service struct {
 }
 
 //RequestStat contacts the XMiDT cluster for device statistics
-func (s *service) RequestStat(authHeaderValue, deviceID string, ht *money.HTTPTracker) (result *common.XmidtResponse, err error) {
+func (s *service) RequestStat(authHeaderValue, deviceID string) (result *common.XmidtResponse, err error) {
 	var r *http.Request
 
 	if r, err = http.NewRequest(http.MethodGet, strings.Replace(s.XmidtStatURL, "${device}", deviceID, 1), nil); err == nil {
 		r.Header.Add("Authorization", authHeaderValue)
 
-		if ht != nil {
-			result, err = httpTracker.DecorateTransactor(s.Tr1d1umTransactor.Transact(r))
-		} else {
-			result, err = s.Tr1d1umTransactor.Transact(r)
-		}
-	}
+		result, err = s.Tr1d1umTransactor.Transact(r)
+
 	return
 }

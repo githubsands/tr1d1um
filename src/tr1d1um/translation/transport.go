@@ -76,7 +76,6 @@ func decodeRequest(ctx context.Context, r *http.Request) (decodedRequest interfa
 		tc := money.DecodeTraceContext(r.Header)
 		httpspanner := money.NewHTTPSpanner(money.StarterON())
 		ht := httpspanner.Start(request.Context(), money.NewSpan(tc))
-		decodeRequest = &wrpRequest{httpTracker: ht}
 	}
 
 	var (
@@ -90,7 +89,6 @@ func decodeRequest(ctx context.Context, r *http.Request) (decodedRequest interfa
 			decodedRequest = &wrpRequest{
 				WRPMessage:      wrpMsg,
 				AuthHeaderValue: r.Header.Get(authHeaderKey),
-				httpTracker:     ht,
 			}
 		}
 	}

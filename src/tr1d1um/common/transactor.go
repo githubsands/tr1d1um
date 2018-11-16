@@ -5,8 +5,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
-
-	money "github.com/Comcast/golang-money"
 )
 
 //XmidtResponse represents the data that a tr1d1um transactor keeps from an HTTP request to
@@ -45,7 +43,7 @@ type Tr1d1umTransactorOptions struct {
 func NewTr1d1umTransactor(o *Tr1d1umTransactorOptions) Tr1d1umTransactor {
 	return &tr1d1umTransactor{
 		Do:             o.Do,
-		RequestTimeout: money.DecorateTransactor(o.RequestTimeout),
+		RequestTimeout: o.RequestTimeout,
 	}
 }
 
@@ -57,8 +55,14 @@ type tr1d1umTransactor struct {
 func (t *tr1d1umTransactor) Transact(req *http.Request) (result *XmidtResponse, err error) {
 	ctx, cancel := context.WithTimeout(req.Context(), t.RequestTimeout)
 	defer cancel()
-
 	var resp *http.Response
+
+	httptracker, ok := money.TrackerFromContext(ctx)
+	if ok {
+		money.InjectTracker(httpTracker)
+		t.Do = httptracker.DecorateTransactor(t.Do)
+	}
+
 	if resp, err = t.Do(req.WithContext(ctx)); err == nil {
 		result = &XmidtResponse{
 			ForwardedHeaders: make(http.Header),
