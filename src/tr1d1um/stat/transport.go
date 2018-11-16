@@ -46,13 +46,6 @@ func ConfigHandler(c *Options) {
 }
 
 func decodeRequest(_ context.Context, r *http.Request) (req interface{}, err error) {
-	if ok, err := money.CheckHeaderForMoneyTrace(r.Header); err == nil {
-		tc := money.DecodeTraceContext(r.Header)
-		httpspanner := money.NewHTTPSpanner(money.StarterON())
-		ht := httpspanner.Start(request.Context(), money.NewSpan(tc))
-		req = &statRequest{httpTracker: ht}
-	}
-
 	var deviceID device.ID
 	if deviceID, err = device.ParseID(mux.Vars(r)["deviceid"]); err == nil {
 		req = &statRequest{

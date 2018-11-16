@@ -3,14 +3,12 @@ package stat
 import (
 	"context"
 
-	money "github.com/Comcast/golang-money"
 	"github.com/go-kit/kit/endpoint"
 )
 
 type statRequest struct {
 	DeviceID        string
 	AuthHeaderValue string
-	httpTracker     *money.HTTPTracker
 }
 
 func makeStatEndpoint(s Service) endpoint.Endpoint {

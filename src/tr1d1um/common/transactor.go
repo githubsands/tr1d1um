@@ -80,5 +80,3 @@ func (t *tr1d1umTransactor) Transact(req *http.Request) (result *XmidtResponse, 
 
 	//Timeout, network errors, etc.
 	err = NewCodedError(err, http.StatusServiceUnavailable)
-	return
-}
