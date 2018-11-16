@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	money "github.com/Comcast/golang-money"
 )
 
 //XmidtResponse represents the data that a tr1d1um transactor keeps from an HTTP request to
@@ -36,12 +38,14 @@ type Tr1d1umTransactorOptions struct {
 
 	//Do is the core responsible to perform the actual HTTP request
 	Do func(*http.Request) (*http.Response, error)
+
+	//TODO: MONEY posibly add the channel here to options.
 }
 
 func NewTr1d1umTransactor(o *Tr1d1umTransactorOptions) Tr1d1umTransactor {
 	return &tr1d1umTransactor{
 		Do:             o.Do,
-		RequestTimeout: o.RequestTimeout,
+		RequestTimeout: money.DecorateTransactor(o.RequestTimeout),
 	}
 }
 

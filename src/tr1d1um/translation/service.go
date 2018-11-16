@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"tr1d1um/common"
 
+	money "github.com/Comcast/golang-money"
 	"github.com/Comcast/webpa-common/wrp"
 )
 
@@ -43,10 +44,11 @@ type service struct {
 	XmidtWrpURL string
 
 	WRPSource string
+
 }
 
 //SendWRP sends the given wrpMsg to the XMiDT cluster and returns the response if any
-func (w *service) SendWRP(wrpMsg *wrp.Message, authValue string) (result *common.XmidtResponse, err error) {
+func (w *service) SendWRP(wrpMsg *wrp.Message, authValue string, *money.HTTPTracker) (result *common.XmidtResponse, err error) {
 	var payload []byte
 
 	// fill in the rest of the source property
@@ -59,7 +61,10 @@ func (w *service) SendWRP(wrpMsg *wrp.Message, authValue string) (result *common
 			req.Header.Add("Content-Type", wrp.Msgpack.ContentType())
 			req.Header.Add("Authorization", authValue)
 
-			result, err = w.Tr1d1umTransactor.Transact(req)
+			if ht != nil {
+				result, err = httptracker.DecorateTransactor(w.Tr1d1umTransactor.Transact(req))
+			} else {
+				result, err = w.Tr1d1umTransactor.Transact(req)
 		}
 	}
 	return

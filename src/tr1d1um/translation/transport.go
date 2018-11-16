@@ -7,9 +7,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
-
 	"tr1d1um/common"
 
+	money "github.com/Comcast/golang-money"
 	"github.com/Comcast/webpa-common/wrp"
 	"github.com/justinas/alice"
 
@@ -72,6 +72,13 @@ func ConfigHandler(c *Options) {
 /* Request Decoding */
 
 func decodeRequest(ctx context.Context, r *http.Request) (decodedRequest interface{}, err error) {
+	if ok, err := money.CheckHeaderForMoneyTrace(r.Header); err == nil {
+		tc := money.DecodeTraceContext(r.Header)
+		httpspanner := money.NewHTTPSpanner(money.StarterON())
+		ht := httpspanner.Start(request.Context(), money.NewSpan(tc))
+		decodeRequest = &wrpRequest{httpTracker: ht}
+	}
+
 	var (
 		payload []byte
 		wrpMsg  *wrp.Message
@@ -83,6 +90,7 @@ func decodeRequest(ctx context.Context, r *http.Request) (decodedRequest interfa
 			decodedRequest = &wrpRequest{
 				WRPMessage:      wrpMsg,
 				AuthHeaderValue: r.Header.Get(authHeaderKey),
+				httpTracker:     ht,
 			}
 		}
 	}
@@ -136,7 +144,7 @@ func encodeResponse(ctx context.Context, w http.ResponseWriter, response interfa
 	// Write TransactionID for all requests
 	w.Header().Set(common.HeaderWPATID, ctx.Value(common.ContextKeyRequestTID).(string))
 
-	if resp.Code != http.StatusOK { //just forward the XMiDT cluster response {
+	if resp.Code != http.StatusOK { //just forward the XMiDT cluster response
 		w.WriteHeader(resp.Code)
 		_, err = w.Write(resp.Body)
 		return
@@ -160,6 +168,12 @@ func encodeResponse(ctx context.Context, w http.ResponseWriter, response interfa
 		}
 
 		_, err = w.Write(wrpModel.Payload)
+	}
+
+	tracker, ok := money.TrackerFromContext(ctx)
+	if ok {
+		result, _ := tracker.Finish()
+		w = money.WriteSpansHeaderTr1d1um(result, w, response)
 	}
 
 	return

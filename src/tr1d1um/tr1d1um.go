@@ -108,6 +108,7 @@ func tr1d1um(arguments []string) (exitCode int) {
 		w.WriteHeader(http.StatusBadRequest)
 	})
 
+	// forwards to apiBase, or api/v2
 	APIRouter := r.PathPrefix(fmt.Sprintf("/%s/", apiBase)).Subrouter()
 
 	authenticate, err = authenticationHandler(v, logger, metricsRegistry)
@@ -181,6 +182,7 @@ func tr1d1um(arguments []string) (exitCode int) {
 	// WRP Service
 	//
 
+	// ts is a service
 	ts := translation.NewService(&translation.ServiceOptions{
 		XmidtWrpURL: fmt.Sprintf("%s/%s/device", v.GetString(targetURLKey), apiBase),
 

@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"tr1d1um/common"
-
+	money "github.com/Comcast/golang-money"
 	"github.com/Comcast/webpa-common/device"
 
 	kitlog "github.com/go-kit/kit/log"
@@ -46,12 +46,18 @@ func ConfigHandler(c *Options) {
 }
 
 func decodeRequest(_ context.Context, r *http.Request) (req interface{}, err error) {
+	if ok, err := money.CheckHeaderForMoneyTrace(r.Header); err == nil {
+		tc := money.DecodeTraceContext(r.Header)
+		httpspanner := money.NewHTTPSpanner(money.StarterON())
+		ht := httpspanner.Start(request.Context(), money.NewSpan(tc))
+		req = &statRequest{httpTracker: ht}
+	}
+
 	var deviceID device.ID
 	if deviceID, err = device.ParseID(mux.Vars(r)["deviceid"]); err == nil {
 		req = &statRequest{
 			AuthHeaderValue: r.Header.Get("Authorization"),
 			DeviceID:        string(deviceID),
-		}
 	} else {
 		err = common.NewBadRequestError(err)
 	}
@@ -85,6 +91,12 @@ func encodeResponse(ctx context.Context, w http.ResponseWriter, response interfa
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set(common.HeaderWPATID, ctx.Value(common.ContextKeyRequestTID).(string))
 	common.ForwardHeadersByPrefix("", resp.ForwardedHeaders, w.Header())
+
+	tracker, ok := money.TrackerFromContext(ctx)
+	if ok {
+		result, _ := tracker.Finish()
+		w = money.WriteSpansHeaderTr1d1um(result, w, response)
+	}
 
 	w.WriteHeader(resp.Code)
 	_, err = w.Write(resp.Body)
