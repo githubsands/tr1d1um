@@ -2,7 +2,6 @@ package hooks
 
 import (
 	"net/url"
-	"time"
 
 	"github.com/Comcast/webpa-common/webhook"
 	"github.com/Comcast/webpa-common/xmetrics"
@@ -22,8 +21,6 @@ type Options struct {
 
 	Authenticate *alice.Chain
 
-	SoAProvider string
-
 	M xmetrics.Registry
 
 	Host         string
@@ -35,7 +32,6 @@ type Options struct {
 //ConfigHandler configures a given handler with webhook endpoints
 func ConfigHandler(o *Options) {
 	hooksRegistry, hooksHandler := o.HooksFactory.NewRegistryAndHandler(o.M)
-	//TODO: GET SoAProvider, it is currently nil
 
 	o.APIRouter.Handle("/hook", o.Authenticate.ThenFunc(hooksRegistry.UpdateRegistry))
 	o.APIRouter.Handle("/hooks", o.Authenticate.ThenFunc(hooksRegistry.GetRegistry))
@@ -46,5 +42,5 @@ func ConfigHandler(o *Options) {
 	}
 
 	//Initialize must take the router without any prefixes
-	o.HooksFactory.Initialize(o.RootRouter, selfURL, o.SoAProvider, hooksHandler, o.Log, o.M, time.Now)
+	o.HooksFactory.Initialize(o.RootRouter, selfURL, hooksHandler, o.Log, o.M, nil)
 }
